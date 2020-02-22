@@ -1,6 +1,8 @@
 package frc.team1458.lib.util.maths
 
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
@@ -76,6 +78,17 @@ object TurtleMaths {
         val v2 = forward + rotate
 
         return Triple(v0, v1, v2)
+    }
+    fun kiwiLockedAngle(forward: Double, strafe: Double, rotate: Double, gyroAngle: Double, lockAngle: Double ) : Triple<Double, Double, Double>{
+        val newForward=cos(gyroAngle-lockAngle) * forward - sin(gyroAngle-lockAngle) * strafe
+        val newStrafe=sin(gyroAngle-lockAngle) * forward + cos(gyroAngle-lockAngle) * strafe
+        //nick big malador srayan dnd buenador
+        val v0 = ((-1.0 / 2.0) * newForward) - ((sqrt(3.0) / 2.0) * newStrafe) + rotate
+        val v1 = ((-1.0 / 2.0) * newForward) + ((sqrt(3.0) / 2.0) * newStrafe) + rotate
+        val v2 = forward + rotate
+
+        return Triple(v0, v1, v2)
+
     }
 }
 
