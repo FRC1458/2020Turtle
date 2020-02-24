@@ -43,10 +43,22 @@ class Drivetrain(val motor1: FX,
                  val angularAcc: Double = 0.1,
 
                  val gyro: AngleSensor,
-                 val invertGyro: Boolean = false,
 
-                 val maxVoltage: Double = 11.0) {
+                 val maxVoltage: Double = 12.0) {
+    init {
+        // Cant use set voltage with ongoing voltage comp. so we disable it
+        motor1.inst.enableVoltageCompensation(false)
+        motor2.inst.enableVoltageCompensation(false)
+        motor3.inst.enableVoltageCompensation(false)
 
+        val ACCEL_LIMIT = 0.1 // higher = slower accceleration, max 1.0, min 0.0
+
+        motor1.inst.configOpenloopRamp(ACCEL_LIMIT, 50)
+        motor2.inst.configOpenloopRamp(ACCEL_LIMIT, 50)
+        motor3.inst.configOpenloopRamp(ACCEL_LIMIT, 50)
+
+        gyro.zero()
+    }
     val wheelCircumference = wheelDiameter.times(Math.PI)
 
     val encoder1: DistanceSensor = object : DistanceSensor {
@@ -88,7 +100,7 @@ class Drivetrain(val motor1: FX,
     // Use this when driving from a controller and your inputs are (-1.0, 1.0)
     fun driveVoltageScaled(motor1Control: Double, motor2Control: Double, motor3Control: Double) {
         motor1.setVoltage(maxVoltage * motor1Control)
-        motor2.setVoltage(maxVoltage * motor2Control)
+        motor2.setVoltage(maxVoltage * motor2Control * 1.30)
         motor3.setVoltage(maxVoltage * motor3Control)
     }
 
@@ -111,6 +123,12 @@ class Drivetrain(val motor1: FX,
 
     fun stop() {
         driveVoltage(0.0, 0.0, 0.0)
+    }
+
+    fun zeroEncoders() {
+        encoder1.zero()
+        encoder2.zero()
+        encoder3.zero()
     }
     /*
     fun clearOdom(clearGyro: Boolean = true, clearEncs: Boolean = true) {

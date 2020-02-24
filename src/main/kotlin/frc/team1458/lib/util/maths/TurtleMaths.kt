@@ -13,20 +13,20 @@ object TurtleMaths {
     private const val TWOPI = 2.0 * 3.14159265
 
     fun linspace(start: Double, end: Double, n: Int): Array<Double> =
-        (0 until n).distinct().map { start + ((it.toDouble() / n) * (end - start)) }.toTypedArray()
+            (0 until n).distinct().map { start + ((it.toDouble() / n) * (end - start)) }.toTypedArray()
 
-    fun constrainAngle(angle: Double) : Double {
+    fun constrainAngle(angle: Double): Double {
         var a = angle
-        while(a >= TWOPI) {
+        while (a >= TWOPI) {
             a -= TWOPI
         }
-        while(a <= 0) {
+        while (a <= 0) {
             a += TWOPI
         }
         return a
     }
 
-    fun constrain(value: Double, min: Double, max: Double) : Double {
+    fun constrain(value: Double, min: Double, max: Double): Double {
         return when {
             value > max -> max
             value < min -> min
@@ -35,14 +35,14 @@ object TurtleMaths {
     }
 
     fun deadband(value: Double, deadband: Double = 0.15): Double {
-        return if(abs(value) < deadband) {
+        return if (abs(value) < deadband) {
             0.0
         } else {
             value
         }
     }
 
-    fun shift(value: Double, minA: Double, maxA: Double, minB: Double, maxB: Double) : Double {
+    fun shift(value: Double, minA: Double, maxA: Double, minB: Double, maxB: Double): Double {
         return minB + ((maxB - minB) / (maxA - minA)) * (value - minA)
     }
 
@@ -68,20 +68,22 @@ object TurtleMaths {
     }
 
     // Positive speed = forward, positive steer = right
-    fun arcadeDrive(speed: Double, steer: Double) : Pair<Double, Double> {
+    fun arcadeDrive(speed: Double, steer: Double): Pair<Double, Double> {
         return Pair<Double, Double>(speed + steer, speed - steer)
     }
 
-    fun kiwiDrive(forward: Double, strafe: Double, rotate: Double) : Triple<Double, Double, Double> {
-        val v0 = ((-1.0 / 2.0) * forward) - ((sqrt(3.0) / 2.0) * strafe) + rotate
-        val v1 = ((-1.0 / 2.0) * forward) + ((sqrt(3.0) / 2.0) * strafe) + rotate
-        val v2 = forward + rotate
+    fun kiwiDrive(forward: Double, strafe: Double, rotate: Double): Triple<Double, Double, Double> {
+        val v1 = ((-1.0 / 2.0) * forward) - ((sqrt(3.0) / 2.0) * strafe) + rotate // -0.125
+        val v2 = ((-1.0 / 2.0) * forward) + ((sqrt(3.0) / 2.0) * strafe) + rotate // -0.125
+        val v3 = forward + rotate // 0.25
 
-        return Triple(v0, v1, v2)
+        return Triple(v1, v2, v3)
     }
-    fun kiwiLockedAngle(forward: Double, strafe: Double, rotate: Double, gyroAngle: Double, lockAngle: Double ) : Triple<Double, Double, Double>{
-        val newForward=cos(gyroAngle-lockAngle) * forward - sin(gyroAngle-lockAngle) * strafe
-        val newStrafe=sin(gyroAngle-lockAngle) * forward + cos(gyroAngle-lockAngle) * strafe
+
+    fun kiwiLockedAngle(forward: Double, strafe: Double, rotate: Double, gyroAngle: Double, lockAngle: Double): Triple<Double, Double, Double> {
+        val newForward = cos(gyroAngle - lockAngle) * forward - sin(gyroAngle - lockAngle) * strafe
+        val newStrafe = sin(gyroAngle - lockAngle) * forward + cos(gyroAngle - lockAngle) * strafe
+
         //nick big malador srayan dnd buenador
         val v0 = ((-1.0 / 2.0) * newForward) - ((sqrt(3.0) / 2.0) * newStrafe) + rotate
         val v1 = ((-1.0 / 2.0) * newForward) + ((sqrt(3.0) / 2.0) * newStrafe) + rotate

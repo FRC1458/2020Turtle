@@ -1,9 +1,6 @@
 package frc.team1458.robot
 
-import com.ctre.phoenix.motorcontrol.ControlMode
-import com.ctre.phoenix.motorcontrol.FeedbackDevice
-import com.ctre.phoenix.motorcontrol.NeutralMode
-import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX
+
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import frc.team1458.lib.actuator.SRX
@@ -20,28 +17,40 @@ class Robot : TimedRobot() {
 
     private val oi: OI = OI()
     private val robot: RobotMap = RobotMap()
+    private var lockedAngle: Double = robot.drivetrain.gyro.radians
+    private var isLocked: Boolean = true
+
+    var vel = Triple(0.0, 0.0, 0.0)
+    var offset: Double = 0.0
+    var lastHeading: Double = 0.0
+    var lastBonk: Double = 0.0
+    var lastT: Double = 0.0
 
     override fun robotInit() {
         println("Robot Initialized")
+
+        SmartDashboard.putNumber("bonkP", -0.002)
+        SmartDashboard.putNumber("bonkD", 0.0005)
+
+        enabledLog()
     }
 
     fun log() {
-        /*
-        SmartDashboard.putNumber("Left Distance", robot.drivetrain.leftEnc.distanceFeet)
-        SmartDashboard.putNumber("Right Distance", robot.drivetrain.rightEnc.distanceFeet)
+        SmartDashboard.putNumber("Motor1 Distance", robot.drivetrain.encoder1.distanceFeet)
+        SmartDashboard.putNumber("Motor2 Distance", robot.drivetrain.encoder2.distanceFeet)
+        SmartDashboard.putNumber("Motor3 Distance", robot.drivetrain.encoder3.distanceFeet)
 
-        SmartDashboard.putNumber("Left Velocity", robot.drivetrain.leftEnc.velocityFeetSec)
-        SmartDashboard.putNumber("Right Velocity", robot.drivetrain.rightEnc.velocityFeetSec)
+        SmartDashboard.putNumber("Motor1 Velocity", robot.drivetrain.encoder1.velocityFeetSec)
+        SmartDashboard.putNumber("Motor2 Velocity", robot.drivetrain.encoder2.velocityFeetSec)
+        SmartDashboard.putNumber("Motor3 Velocity", robot.drivetrain.encoder3.velocityFeetSec)
 
-        SmartDashboard.putNumber("Left Error", robot.drivetrain.leftClosedLoopError)
-        SmartDashboard.putNumber("Right Error", robot.drivetrain.rightClosedLoopError)
+        SmartDashboard.putNumber("NavX Theta", robot.drivetrain.gyro.radians)
+        SmartDashboard.putBoolean("Is Locked", isLocked)
+        SmartDashboard.putNumber("Lock Angle", lockedAngle)
 
-        SmartDashboard.putNumber("Odom X Feet", robot.drivetrain.pose.translation.x)
-        SmartDashboard.putNumber("Odom Y Feet", robot.drivetrain.pose.translation.y)
-        SmartDashboard.putNumber("Odom Theta Deg", robot.drivetrain.pose.rotation.degrees)
-
-        SmartDashboard.putNumber("NavX Theta", robot.drivetrain.gyro.angle)
-         */
+        SmartDashboard.putNumber("Forward Axis", oi.forwardAxis.value)
+        SmartDashboard.putNumber("Strafe Axis", oi.strafeAxis.value)
+        SmartDashboard.putNumber("Rotate Axis", oi.rotateAxis.value)
     }
 
     fun enabledLog() {
@@ -49,39 +58,124 @@ class Robot : TimedRobot() {
     }
 
     override fun autonomousInit() {
+        autonomousPeriodic()
     }
 
     override fun autonomousPeriodic() {
-        disabledInit()
+        delay(500)
+
+        robot.falcon1.setRaw(-0.125)
+        robot.falcon2.setRaw(-0.125 * 1.25)
+        robot.falcon3.setRaw(0.250)
+
+        SmartDashboard.putNumber("Motor1 VelocityDes", -0.125)
+        SmartDashboard.putNumber("Motor2 VelocityDes", -0.125 * 1.25)
+        SmartDashboard.putNumber("Motor3 VelocityDes", 0.250)
+
+        enabledLog()
     }
 
     override fun teleopInit() {
-        teleopPeriodic()
+        robot.drivetrain.zeroEncoders()
+        robot.drivetrain.gyro.zero()
+
+        lockedAngle = robot.drivetrain.gyro.radians
+        lastHeading = robot.drivetrain.gyro.radians
+
+        offset = robot.drivetrain.gyro.heading - lastHeading
     }
 
-    override fun teleopPeriodic() {
-        val (v1, v2, v3) = TurtleMaths.kiwiDrive(TurtleMaths.deadband(oi.forwardAxis.value, 0.05),
-                                                 TurtleMaths.deadband(oi.strafeAxis.value, 0.05),
-                                                 TurtleMaths.deadband(oi.rotateAxis.value, 0.05))
 
-        robot.drivetrain.driveVoltageScaled(v1, v2, v3)
+    override fun teleopPeriodic() {
+        if (oi.frameLockButton.triggered) {
+            isLocked = !isLocked
+            lockedAngle = robot.drivetrain.gyro.radians
+            lastHeading = robot.drivetrain.gyro.radians
+            offset = 0.0
+        }
+
+        if (!isLocked) {
+            vel = TurtleMaths.kiwiDrive(TurtleMaths.deadband(oi.forwardAxis.value, 0.05),
+                    TurtleMaths.deadband(oi.strafeAxis.value, 0.05),
+                    TurtleMaths.deadband(oi.rotateAxis.value, 0.05))
+
+            SmartDashboard.putNumber("Motor1 VelocityDes", vel.first)
+            SmartDashboard.putNumber("Motor2 VelocityDes", vel.second)
+            SmartDashboard.putNumber("Motor3 VelocityDes", vel.third)
+
+            robot.drivetrain.driveVoltageScaled(vel.first, vel.second, vel.third)
+
+        } else if (isLocked) {
+            vel = TurtleMaths.kiwiLockedAngle(TurtleMaths.deadband(oi.forwardAxis.value, 0.05),
+                    TurtleMaths.deadband(oi.strafeAxis.value, 0.05),
+                    0.0, robot.drivetrain.gyro.radians, lockedAngle)
+
+            offset = robot.drivetrain.gyro.heading - lastHeading
+            while (offset < 0) offset += 360
+            offset %= 360
+            if (offset > 180) {
+                offset += -360
+            }
+
+            SmartDashboard.putNumber("bonks", offset)
+            val bonkoffset = offset + 0.00000
+            offset = SmartDashboard.getNumber("bonkP", Double.NaN) * offset + SmartDashboard.getNumber("bonkD", Double.NaN) * ((offset - lastBonk) / (lastT - systemTimeSeconds))
+            SmartDashboard.putNumber("bonks2", offset)
+
+            lastHeading += (systemTimeSeconds - lastT) * TurtleMaths.deadband(oi.rotateAxis.value, 0.05) * 360.0
+            while (lastHeading < 0) lastHeading += 360
+            lastHeading %= 360.0
+            SmartDashboard.putNumber("lastHeading", lastHeading)
+
+            lastBonk = bonkoffset
+            lastT = systemTimeSeconds
+
+            //offset = Math.min(offset, 0.12)
+            //offset = Math.max(offset, -0.12)
+            SmartDashboard.putNumber("bonks3", offset)
+
+            robot.drivetrain.driveVoltageScaled(vel.first + offset, vel.second + offset, vel.third + offset)
+        }
 
         enabledLog()
     }
 
     override fun testInit() {
+        testPeriodic()
     }
 
     override fun testPeriodic() {
+        if (oi.motor1Button.triggered) {
+            robot.falcon1.setRaw(-0.125)
+        } else {
+            robot.falcon1.setRaw(0.0)
+        }
+        if (oi.motor2Button.triggered) {
+            robot.falcon2.setRaw(-0.125 * 1.30)
+        } else {
+            robot.falcon2.setRaw(0.0)
+        }
+        if (oi.motor3Button.triggered) {
+            robot.falcon3.setRaw(0.250)
+        } else {
+            robot.falcon3.setRaw(0.0)
+        }
+
+        SmartDashboard.putNumber("Motor1 VelocityDes", -0.125)
+        SmartDashboard.putNumber("Motor2 VelocityDes", -0.125 * 1.30)
+        SmartDashboard.putNumber("Motor3 VelocityDes", 0.250)
+
+        enabledLog()
     }
 
     override fun disabledInit() {
-        robot.drivetrain.stop()
+        disabledPeriodic()
     }
 
     override fun disabledPeriodic() {
         robot.drivetrain.stop()
-        log()
+        offset = 0.0
+        enabledLog()
     }
 }
 
