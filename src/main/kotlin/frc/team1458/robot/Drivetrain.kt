@@ -97,6 +97,51 @@ class Drivetrain(val motor1: FX,
         }
     }
 
+    var highGear = false
+        public get
+        private set
+
+    var closedLoop = closedLoop
+        public get
+        public set(value) {
+            field = value;
+            configPID()
+        }
+
+    val leftClosedLoopError: Double
+        get() = leftMaster.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
+
+    val rightClosedLoopError: Double
+        get() = rightMaster.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
+
+    init {
+        highGear = false
+        shifter?.retract()
+
+        configPID()
+    }
+
+    private fun configPID() {
+        val left = if (highGear) {
+            pidConstantsHighGearLeft
+        } else {
+            pidConstantsLowGearLeft
+        }
+        val right = if (highGear) {
+            pidConstantsHighGearRight
+        } else {
+            pidConstantsLowGearRight
+        }
+
+        if (closedLoop) {
+            leftMaster.pidConstants = left
+            rightMaster.pidConstants = right
+        } else {
+            leftMaster.pidConstants = left.openLoop
+            rightMaster.pidConstants = right.openLoop
+        }
+    }
+
     // Use this when driving from a controller and your inputs are (-1.0, 1.0)
     fun driveVoltageScaled(motor1Control: Double, motor2Control: Double, motor3Control: Double) {
         motor1.setVoltage(maxVoltage * motor1Control)

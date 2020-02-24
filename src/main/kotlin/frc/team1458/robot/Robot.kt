@@ -3,11 +3,6 @@ package frc.team1458.robot
 
 import edu.wpi.first.wpilibj.TimedRobot
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
-import frc.team1458.lib.actuator.SRX
-import frc.team1458.lib.actuator.SmartMotor
-import frc.team1458.lib.input.Gamepad
-import frc.team1458.lib.pathing.PathGenerator
-import frc.team1458.lib.util.LiveDashboard
 import frc.team1458.lib.util.flow.delay
 import frc.team1458.lib.util.flow.systemTimeSeconds
 import frc.team1458.lib.util.maths.TurtleMaths
