@@ -17,11 +17,12 @@ class OI {
      */
     private val flightJoystick: Gamepad = Gamepad.xboxController(0)
 
-    val forwardAxis = flightJoystick.getAxis(0).scale(0.25)
-    val strafeAxis = flightJoystick.getAxis(1).scale(0.25)
-    val rotateAxis = flightJoystick.getAxis(4).scale(0.4).inverted // 2
+    val forwardAxis = flightJoystick.getAxis(0).scale(1.0) // 0.18
+    val strafeAxis = flightJoystick.getAxis(1).scale(1.0) // 0.18
+    val rotateAxis = flightJoystick.getAxis(4).scale(0.25).inverted // 2
 
     val frameLockButton = flightJoystick.getButton(1) // A button
+    val followTurn = flightJoystick.getButton(3) // X button
 
     val motor1Button = flightJoystick.getButton(3) // X button
     val motor2Button = flightJoystick.getButton(1) // A button
