@@ -44,8 +44,14 @@ class Drivetrain(val motor1: FX,
 
                  val gyro: AngleSensor,
 
-                 val maxVoltage: Double = 12.0) {
+                 val maxVoltage: Double = 12.0,
+
+                 val motorOneConstants: PIDConstants = PIDConstants.DISABLE,
+                 val motorTwoConstants: PIDConstants = PIDConstants.DISABLE,
+                 val motorThreeConstants: PIDConstants = PIDConstants.DISABLE
+                 ) {
     init {
+
         // Cant use set voltage with ongoing voltage comp. so we disable it
         motor1.inst.enableVoltageCompensation(false)
         motor2.inst.enableVoltageCompensation(false)
@@ -59,6 +65,7 @@ class Drivetrain(val motor1: FX,
 
         gyro.zero()
     }
+
     val wheelCircumference = wheelDiameter.times(Math.PI)
 
     val encoder1: DistanceSensor = object : DistanceSensor {
@@ -97,49 +104,35 @@ class Drivetrain(val motor1: FX,
         }
     }
 
-    var highGear = false
-        public get
-        private set
 
-    var closedLoop = closedLoop
+    var closedLoop: Boolean = false
         public get
         public set(value) {
             field = value;
             configPID()
         }
 
-    val leftClosedLoopError: Double
-        get() = leftMaster.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
+    val wheelOneClosedLoopError: Double
+        get() = motor1.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
 
-    val rightClosedLoopError: Double
-        get() = rightMaster.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
+    val wheelTwoClosedLoopError: Double
+        get() = motor2.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
+    val wheelThreeClosedLoopError: Double
+        get() = motor3.closedLoopError * (wheelCircumference ?: 0.0) / 360.0
 
     init {
-        highGear = false
-        shifter?.retract()
+
 
         configPID()
     }
 
-    private fun configPID() {
-        val left = if (highGear) {
-            pidConstantsHighGearLeft
-        } else {
-            pidConstantsLowGearLeft
-        }
-        val right = if (highGear) {
-            pidConstantsHighGearRight
-        } else {
-            pidConstantsLowGearRight
-        }
+    public fun configPID() {
 
-        if (closedLoop) {
-            leftMaster.pidConstants = left
-            rightMaster.pidConstants = right
-        } else {
-            leftMaster.pidConstants = left.openLoop
-            rightMaster.pidConstants = right.openLoop
-        }
+
+        motor1.pidConstants = motorOneConstants
+        motor2.pidConstants = motorTwoConstants
+        motor3.pidConstants = motorThreeConstants
+
     }
 
     // Use this when driving from a controller and your inputs are (-1.0, 1.0)

@@ -1,6 +1,7 @@
 package frc.team1458.robot
 
 import frc.team1458.lib.actuator.FX
+import frc.team1458.lib.pid.PIDConstants
 import frc.team1458.lib.sensor.NavX
 import frc.team1458.lib.sensor.interfaces.AngleSensor
 
@@ -14,6 +15,9 @@ class RobotMap {
             motor1 = falcon1,
             motor2 = falcon2,
             motor3 = falcon3,
+            motorOneConstants = PIDConstants(0.1,0.0,0.0,0.0711,1.17/12) ,
+            motorTwoConstants = PIDConstants(0.1,0.0,0.0,0.0711,1.17/12),
+            motorThreeConstants = PIDConstants(0.1,0.0,0.0,0.0711,1.17/12),
 
             wheelDiameter = 0.51,
             kiwiRadius = 2.17,
@@ -22,4 +26,7 @@ class RobotMap {
 
             maxVoltage = 11.0
     )
+    init {
+        drivetrain.configPID()
+    }
 }
